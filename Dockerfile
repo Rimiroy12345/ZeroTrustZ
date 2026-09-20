@@ -13,11 +13,7 @@ RUN cmake -S backend -B backend/build \
     cmake --build backend/build -j2
 
 
-FROM debian:bookworm-slim
-
-RUN apt-get update && \
-    apt-get install -y libstdc++6 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM gcc:14-bookworm
 
 WORKDIR /app
 

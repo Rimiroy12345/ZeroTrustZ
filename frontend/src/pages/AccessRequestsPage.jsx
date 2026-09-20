@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -11,9 +12,11 @@ import {
   User,
 } from "lucide-react";
 
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import "../styles/modules.css";
+
+const API_BASE_URL = "https://zerotrustz.onrender.com";
 
 const navItems = [
   { name: "Overview", path: "/dashboard" },
@@ -26,7 +29,7 @@ const navItems = [
   { name: "Audit Logs", path: "/logs" },
 ];
 
-const requests = [
+const initialRequests = [
   {
     id: "REQ-1042",
     identity: "admin@zerotrustz.dev",
@@ -71,20 +74,124 @@ const requests = [
     reason: "Unknown identity · Device trust failed",
     time: "14:21:56",
   },
-  {
-    id: "REQ-1038",
-    identity: "analyst@zerotrustz.dev",
-    resource: "analytics-api",
-    device: "ZT-LAPTOP-019",
-    location: "Bengaluru, India",
-    risk: "Medium",
-    decision: "Allow",
-    reason: "Step-up verification completed",
-    time: "14:18:32",
-  },
 ];
 
+function getStoredToken() {
+  return (
+    localStorage.getItem("zerotrustz_token") ||
+    sessionStorage.getItem("zerotrustz_token")
+  );
+}
+
+function trustToRisk(userTrustScore, deviceTrustScore) {
+  const lowest = Math.min(Number(userTrustScore), Number(deviceTrustScore));
+
+  if (lowest >= 80) return "Low";
+  if (lowest >= 60) return "Medium";
+  if (lowest >= 40) return "High";
+  return "Critical";
+}
+
 function AccessRequestsPage() {
+  const navigate = useNavigate();
+  const [requests, setRequests] = useState(initialRequests);
+  const [submitting, setSubmitting] = useState(false);
+  const [evaluationError, setEvaluationError] = useState("");
+  const [form, setForm] = useState({
+    username: "admin@zerotrustz.dev",
+    role: "admin",
+    userTrustScore: 85,
+    resource: "cloud-dashboard",
+    action: "read",
+    ipAddress: "127.0.0.1",
+    deviceId: "ZT-LAPTOP-042",
+    deviceTrustScore: 90,
+  });
+
+  const total = requests.length;
+  const allowed = requests.filter((request) => request.decision === "Allow").length;
+  const denied = requests.filter((request) => request.decision === "Deny").length;
+  const highRisk = requests.filter(
+    (request) => request.risk === "High" || request.risk === "Critical"
+  ).length;
+
+  const updateField = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]:
+        name === "userTrustScore" || name === "deviceTrustScore"
+          ? Number(value)
+          : value,
+    }));
+  };
+
+  const evaluateRequest = async (event) => {
+    event.preventDefault();
+
+    const token = getStoredToken();
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setSubmitting(true);
+    setEvaluationError("");
+
+    try {
+      const response = await fetch(API_BASE_URL + "/api/access/evaluate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem("zerotrustz_token");
+        localStorage.removeItem("zerotrustz_userId");
+        sessionStorage.removeItem("zerotrustz_token");
+        sessionStorage.removeItem("zerotrustz_userId");
+        navigate("/login");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!data.decision) {
+        throw new Error(data.error || "The policy engine returned an invalid response.");
+      }
+
+      const now = new Date();
+      const newRequest = {
+        id: "LIVE-" + Date.now().toString().slice(-6),
+        identity: form.username,
+        resource: form.resource,
+        device: form.deviceId,
+        location: form.ipAddress,
+        risk: trustToRisk(form.userTrustScore, form.deviceTrustScore),
+        decision: data.decision === "ALLOW" ? "Allow" : "Deny",
+        reason: data.reason || "Zero Trust policy evaluation completed.",
+        time: now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      };
+
+      setRequests((current) => [newRequest, ...current]);
+    } catch (error) {
+      console.error("Access evaluation failed:", error);
+      setEvaluationError(
+        error.message || "Could not contact the Zero Trust policy engine."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -103,7 +210,7 @@ function AccessRequestsPage() {
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
-                `dashboard-nav-item ${isActive ? "active" : ""}`
+                "dashboard-nav-item " + (isActive ? "active" : "")
               }
             >
               <span>{item.name}</span>
@@ -112,8 +219,8 @@ function AccessRequestsPage() {
         </nav>
 
         <div className="sidebar-bottom">
-          <Link to="/" className="logout-link">
-            Exit console
+          <Link to="/dashboard" className="logout-link">
+            Back to overview
           </Link>
         </div>
       </aside>
@@ -128,7 +235,7 @@ function AccessRequestsPage() {
           <div className="topbar-right">
             <div className="connection-status">
               <span />
-              Live policy stream
+              Live C++ policy engine
             </div>
           </div>
         </header>
@@ -139,40 +246,158 @@ function AccessRequestsPage() {
               <span className="dashboard-eyebrow">ZERO TRUST DECISIONS</span>
               <h1>Access requests</h1>
               <p>
-                Inspect every authorization decision with identity, device,
-                risk, resource, and policy context.
+                Submit live authorization requests to the deployed C++ policy
+                engine and inspect each Zero Trust decision.
               </p>
             </div>
 
-            <button className="dashboard-action">
+            <button className="dashboard-action" type="button">
               <Filter size={15} />
-              Filter requests
+              Live evaluation
             </button>
+          </section>
+
+          <section className="live-evaluation-panel">
+            <div className="module-panel-header">
+              <div>
+                <span>LIVE POLICY TEST</span>
+                <h3>Evaluate an access request</h3>
+              </div>
+
+              <div className="stream-status">
+                <span />
+                Backend connected
+              </div>
+            </div>
+
+            <form className="evaluation-form" onSubmit={evaluateRequest}>
+              <label>
+                Identity
+                <input
+                  name="username"
+                  value={form.username}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <label>
+                Role
+                <select name="role" value={form.role} onChange={updateField}>
+                  <option value="admin">Admin</option>
+                  <option value="security">Security</option>
+                  <option value="developer">Developer</option>
+                  <option value="analyst">Analyst</option>
+                </select>
+              </label>
+
+              <label>
+                User trust
+                <input
+                  name="userTrustScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.userTrustScore}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <label>
+                Resource
+                <input
+                  name="resource"
+                  value={form.resource}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <label>
+                Action
+                <select name="action" value={form.action} onChange={updateField}>
+                  <option value="read">Read</option>
+                  <option value="write">Write</option>
+                  <option value="delete">Delete</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+
+              <label>
+                IP address
+                <input
+                  name="ipAddress"
+                  value={form.ipAddress}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <label>
+                Device ID
+                <input
+                  name="deviceId"
+                  value={form.deviceId}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <label>
+                Device trust
+                <input
+                  name="deviceTrustScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.deviceTrustScore}
+                  onChange={updateField}
+                  required
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="evaluation-submit"
+                disabled={submitting}
+              >
+                <KeyRound size={16} />
+                {submitting ? "Evaluating..." : "Evaluate with C++ engine"}
+              </button>
+            </form>
+
+            {evaluationError && (
+              <div className="evaluation-error">
+                <AlertTriangle size={15} />
+                {evaluationError}
+              </div>
+            )}
           </section>
 
           <section className="module-stat-grid">
             <article>
-              <span>Total requests</span>
-              <strong>247</strong>
-              <small>Last 24 hours</small>
+              <span>Visible requests</span>
+              <strong>{total}</strong>
+              <small>Demo + live evaluations</small>
             </article>
 
             <article>
               <span>Allowed</span>
-              <strong>231</strong>
-              <small>93.5% approval rate</small>
+              <strong>{allowed}</strong>
+              <small>Passed policy checks</small>
             </article>
 
             <article>
               <span>Denied</span>
-              <strong>16</strong>
-              <small>6.5% blocked</small>
+              <strong>{denied}</strong>
+              <small>Blocked by policy</small>
             </article>
 
             <article>
               <span>High-risk</span>
-              <strong>4</strong>
-              <small>Requires review</small>
+              <strong>{highRisk}</strong>
+              <small>High or critical context</small>
             </article>
           </section>
 
@@ -195,7 +420,9 @@ function AccessRequestsPage() {
                   <div className="request-card" key={request.id}>
                     <div className="request-leading">
                       <div
-                        className={`request-status-icon ${request.decision.toLowerCase()}`}
+                        className={
+                          "request-status-icon " + request.decision.toLowerCase()
+                        }
                       >
                         {request.decision === "Allow" ? (
                           <CheckCircle2 size={18} />
@@ -223,14 +450,16 @@ function AccessRequestsPage() {
                       </div>
 
                       <div>
-                        <span>Location</span>
+                        <span>Source</span>
                         <strong>{request.location}</strong>
                       </div>
 
                       <div>
                         <span>Risk</span>
                         <strong
-                          className={`risk-text ${request.risk.toLowerCase()}`}
+                          className={
+                            "risk-text " + request.risk.toLowerCase()
+                          }
                         >
                           {request.risk}
                         </strong>
@@ -239,7 +468,9 @@ function AccessRequestsPage() {
                       <div>
                         <span>Decision</span>
                         <strong
-                          className={`decision-text ${request.decision.toLowerCase()}`}
+                          className={
+                            "decision-text " + request.decision.toLowerCase()
+                          }
                         >
                           {request.decision}
                         </strong>
@@ -272,8 +503,8 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>Identity checks</span>
-                  <strong>247 / 247</strong>
+                  <span>Session validation</span>
+                  <strong>Required</strong>
                 </div>
               </div>
 
@@ -283,8 +514,8 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>Policy evaluations</span>
-                  <strong>247</strong>
+                  <span>Policy engine</span>
+                  <strong>C++ / Crow</strong>
                 </div>
               </div>
 
@@ -294,8 +525,8 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>Average decision time</span>
-                  <strong>14 ms</strong>
+                  <span>User trust threshold</span>
+                  <strong>60 / 100</strong>
                 </div>
               </div>
 
@@ -305,15 +536,15 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>Risk escalations</span>
-                  <strong>4</strong>
+                  <span>Device trust threshold</span>
+                  <strong>60 / 100</strong>
                 </div>
               </div>
 
               <div className="engine-note">
                 <ShieldCheck size={16} />
-                Every request is evaluated independently. Network location alone
-                never grants trust.
+                Every submitted request is revalidated by the deployed backend.
+                A valid session alone never guarantees access.
               </div>
             </aside>
           </section>

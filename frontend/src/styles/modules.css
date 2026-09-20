@@ -1,0 +1,389 @@
+.module-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.module-stat-grid article {
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 19, 15, 0.12);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.module-stat-grid span {
+  display: block;
+  color: #777e73;
+  font-size: 9px;
+}
+
+.module-stat-grid strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.module-stat-grid small {
+  display: block;
+  margin-top: 5px;
+  color: #91978d;
+  font-size: 8px;
+}
+
+.requests-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 14px;
+}
+
+.requests-panel,
+.request-insights-panel {
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 19, 15, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.module-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.module-panel-header span {
+  color: #7c8278;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.module-panel-header h3 {
+  margin-top: 5px;
+  font-size: 17px;
+}
+
+.stream-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #6e7569;
+  font-size: 9px;
+}
+
+.stream-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7ea91f;
+}
+
+.request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.request-card {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(16, 19, 15, 0.09);
+  background: #fafbf8;
+  transition: 150ms ease;
+}
+
+.request-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(16, 19, 15, 0.18);
+}
+
+.request-leading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.request-status-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+}
+
+.request-status-icon.allow {
+  background: #e8f2d5;
+  color: #5f7f12;
+}
+
+.request-status-icon.deny {
+  background: #f6ded9;
+  color: #a54538;
+}
+
+.request-title-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.request-title-line strong {
+  font-size: 11px;
+}
+
+.request-title-line span {
+  color: #989e94;
+  font-size: 8px;
+}
+
+.request-leading p {
+  margin-top: 4px;
+  color: #737a70;
+  font-size: 9px;
+}
+
+.request-context {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+  padding: 13px 0;
+  border-top: 1px solid rgba(16, 19, 15, 0.07);
+  border-bottom: 1px solid rgba(16, 19, 15, 0.07);
+}
+
+.request-context span {
+  display: block;
+  color: #92988e;
+  font-size: 8px;
+}
+
+.request-context strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+}
+
+.risk-text.low {
+  color: #5d7917;
+}
+
+.risk-text.medium {
+  color: #967118;
+}
+
+.risk-text.high,
+.risk-text.critical {
+  color: #a54538;
+}
+
+.decision-text.allow {
+  color: #5d7917;
+}
+
+.decision-text.deny {
+  color: #a54538;
+}
+
+.request-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  color: #7d8479;
+  font-size: 8px;
+}
+
+.request-bottom > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engine-stat {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(16, 19, 15, 0.08);
+}
+
+.engine-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #111510;
+  color: #d7ff45;
+}
+
+.engine-stat.warning .engine-icon {
+  background: #f5ded9;
+  color: #a54538;
+}
+
+.engine-stat span {
+  display: block;
+  color: #858c81;
+  font-size: 8px;
+}
+
+.engine-stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.engine-note {
+  display: flex;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 13px;
+  border-radius: 9px;
+  background: rgba(215, 255, 69, 0.12);
+  color: #60675c;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.engine-note svg {
+  flex-shrink: 0;
+  color: #607d16;
+}
+
+@media (max-width: 1050px) {
+  .requests-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .module-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .module-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-context {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.generic-module-layout {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 14px;
+}
+
+.generic-data-panel,
+.generic-insight-panel {
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 19, 15, 0.12);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.generic-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.generic-table-head,
+.generic-table-row {
+  min-width: 720px;
+  display: grid;
+  gap: 14px;
+  align-items: center;
+}
+
+.generic-table-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(16, 19, 15, 0.1);
+  color: #8b9187;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.generic-table-row {
+  min-height: 58px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(16, 19, 15, 0.07);
+  color: #60675d;
+  font-size: 9px;
+  transition: 140ms ease;
+}
+
+.generic-table-row:hover {
+  background: rgba(215, 255, 69, 0.055);
+}
+
+.generic-table-row > span:first-child {
+  color: #1a1e19;
+  font-weight: 650;
+}
+
+.table-status {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf0ea;
+}
+
+.table-status.positive {
+  background: #e8f2d5;
+  color: #587612;
+}
+
+.table-status.negative {
+  background: #f5ded9;
+  color: #a44135;
+}
+
+.table-status.warning {
+  background: #f4ecd5;
+  color: #8c6912;
+}
+
+.generic-insights {
+  display: flex;
+  flex-direction: column;
+}
+
+.generic-insight-item {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(16, 19, 15, 0.08);
+}
+
+.generic-insight-item span {
+  display: block;
+  color: #888f83;
+  font-size: 8px;
+}
+
+.generic-insight-item strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+
+.generic-insight-item small {
+  display: block;
+  margin-top: 4px;
+  color: #949b90;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1050px) {
+  .generic-module-layout {
+    grid-template-columns: 1fr;
+  }
+}

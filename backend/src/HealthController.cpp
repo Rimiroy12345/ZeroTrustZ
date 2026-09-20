@@ -1,6 +1,6 @@
 #include "HealthController.h"
 
-void HealthController::registerRoutes(crow::SimpleApp& app)
+void HealthController::registerRoutes(ZeroTrustApp& app)
 {
     CROW_ROUTE(app, "/api/health")([] {
         crow::json::wvalue response;

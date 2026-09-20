@@ -2,7 +2,7 @@
 
 #include "App.h"
 
-class HealthController
+class DeviceController
 {
 public:
     static void registerRoutes(ZeroTrustApp& app);

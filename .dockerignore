@@ -1,0 +1,13 @@
+.git
+.gitignore
+
+frontend/node_modules
+frontend/dist
+frontend/build
+
+backend/build
+
+vcpkg
+
+*.log
+.vscode

@@ -17,7 +17,7 @@ int main()
     auto& cors = app.get_middleware<crow::CORSHandler>();
 
     cors.global()
-        .origin("*")
+        .origin("https://zerotrustz-frontend.onrender.com")
         .headers(
             "Origin",
             "Content-Type",
@@ -35,7 +35,7 @@ int main()
     AccessController::registerRoutes(app, authService);
     AuthController::registerRoutes(app, authService);
     DeviceController::registerRoutes(app);
-    AuditController::registerRoutes(app);
+    AuditController::registerRoutes(app, authService);
 
     const char* portEnv = std::getenv("PORT");
     const int port = portEnv ? std::stoi(portEnv) : 8080;

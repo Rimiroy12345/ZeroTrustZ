@@ -1,8 +1,43 @@
-import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  LockKeyhole,
+  ShieldCheck,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { loginUser, storeSession } from "../api";
 import "../styles/login.css";
 
 function LoginPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const result = await loginUser(email, password);
+
+      if (!result?.token) {
+        throw new Error("Authentication succeeded without a session token.");
+      }
+
+      storeSession(result.token, result.userId || email, rememberDevice);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err.message || "Authentication failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="login-page">
       <div className="login-left">
@@ -22,8 +57,8 @@ function LoginPage() {
           <span className="login-kicker">SECURE ACCESS</span>
           <h1>Verify your identity before access begins.</h1>
           <p>
-            ZeroTrustZ evaluates identity, authentication context, and device
-            trust before granting access to protected resources.
+            ZeroTrustZ validates your credentials and session before granting
+            access to the security console.
           </p>
         </div>
 
@@ -33,11 +68,11 @@ function LoginPage() {
             <strong>Required</strong>
           </div>
           <div className="login-side-row">
-            <span>Device posture</span>
-            <strong>Checked</strong>
+            <span>Session validation</span>
+            <strong>Required</strong>
           </div>
           <div className="login-side-row">
-            <span>Session validation</span>
+            <span>Policy evaluation</span>
             <strong>Continuous</strong>
           </div>
         </div>
@@ -52,46 +87,71 @@ function LoginPage() {
           <span className="login-card-label">ADMIN CONSOLE</span>
           <h2>Sign in to continue</h2>
           <p>
-            Use your authorized ZeroTrustZ credentials to access the security
-            console.
+            Use the authorized ZeroTrustZ admin credentials configured on the
+            backend.
           </p>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              window.location.href = "/dashboard";
-            }}
-          >
+          <form onSubmit={handleSubmit}>
             <label>
               Email address
-              <input type="email" placeholder="admin@zerotrustz.dev" required />
+              <input
+                type="email"
+                placeholder="admin@zerotrustz.dev"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                required
+              />
             </label>
 
             <label>
               Password
-              <input type="password" placeholder="Enter your password" required />
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
             </label>
 
             <div className="login-options">
               <label className="remember-box">
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  checked={rememberDevice}
+                  onChange={(e) => setRememberDevice(e.target.checked)}
+                />
                 <span>Remember this device</span>
               </label>
-
-              <button type="button" className="forgot-button">
-                Forgot password?
-              </button>
             </div>
 
-            <button className="login-submit" type="submit">
-              Continue securely
+            {error && (
+              <div
+                style={{
+                  marginBottom: "12px",
+                  color: "#b42318",
+                  fontSize: "12px",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              className="login-submit"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? "Verifying..." : "Continue securely"}
               <ArrowRight size={17} />
             </button>
           </form>
 
           <div className="login-security-note">
             <ShieldCheck size={15} />
-            Protected by continuous Zero Trust verification
+            Credentials are validated by the deployed C++ backend
           </div>
         </div>
       </div>

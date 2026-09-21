@@ -1,13 +1,13 @@
 #include "AuthController.h"
 
+#include <cstdlib>
+#include <string>
+
 void AuthController::registerRoutes(
     ZeroTrustApp& app,
     AuthService& authService
 )
 {
-    // -----------------------------
-    // Login
-    // -----------------------------
     CROW_ROUTE(app, "/api/auth/login")
         .methods(crow::HTTPMethod::POST)
     ([&authService](const crow::request& req)
@@ -22,21 +22,44 @@ void AuthController::registerRoutes(
             );
         }
 
-        if (!body.has("userId"))
+        if (!body.has("userId") || !body.has("password"))
         {
             return crow::response(
                 400,
-                R"({"error":"userId is required"})"
+                R"({"error":"userId and password are required"})"
+            );
+        }
+
+        const char* configuredUser =
+            std::getenv("ZEROTRUST_ADMIN_USER");
+
+        const char* configuredPassword =
+            std::getenv("ZEROTRUST_ADMIN_PASSWORD");
+
+        if (!configuredUser || !configuredPassword)
+        {
+            return crow::response(
+                503,
+                R"({"error":"Server authentication is not configured"})"
             );
         }
 
         const std::string userId = body["userId"].s();
+        const std::string password = body["password"].s();
+
+        if (userId != configuredUser ||
+            password != configuredPassword)
+        {
+            return crow::response(
+                401,
+                R"({"error":"Invalid credentials"})"
+            );
+        }
 
         const std::string token =
             authService.createSession(userId);
 
         crow::json::wvalue response;
-
         response["authenticated"] = true;
         response["userId"] = userId;
         response["token"] = token;
@@ -45,9 +68,6 @@ void AuthController::registerRoutes(
         return crow::response(200, response);
     });
 
-    // -----------------------------
-    // Validate Session
-    // -----------------------------
     CROW_ROUTE(app, "/api/auth/validate")
         .methods(crow::HTTPMethod::GET)
     ([&authService](const crow::request& req)
@@ -69,7 +89,6 @@ void AuthController::registerRoutes(
             authHeader.substr(prefix.length());
 
         std::string userId;
-
         const bool valid =
             authService.validateSession(token, userId);
 
@@ -83,13 +102,9 @@ void AuthController::registerRoutes(
         }
 
         response["error"] = "Invalid or expired session token";
-
         return crow::response(401, response);
     });
 
-    // -----------------------------
-    // Logout
-    // -----------------------------
     CROW_ROUTE(app, "/api/auth/logout")
         .methods(crow::HTTPMethod::POST)
     ([&authService](const crow::request& req)

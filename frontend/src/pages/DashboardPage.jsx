@@ -17,7 +17,8 @@ import {
   Users,
 } from "lucide-react";
 
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
+import { getStoredToken, logoutUser, clearStoredSession } from "../api";
 import "../styles/dashboard.css";
 
 const navItems = [
@@ -67,6 +68,23 @@ const accessEvents = [
 ];
 
 function DashboardPage() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const token = getStoredToken();
+
+    try {
+      if (token) {
+        await logoutUser(token);
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      clearStoredSession();
+      navigate("/login", { replace: true });
+    }
+  };
+
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -112,10 +130,14 @@ function DashboardPage() {
             <small>All verification services online</small>
           </div>
 
-          <Link to="/" className="logout-link">
+          <button
+            type="button"
+            className="logout-link"
+            onClick={handleLogout}
+          >
             <LogOut size={16} />
             Exit console
-          </Link>
+          </button>
         </div>
       </aside>
 

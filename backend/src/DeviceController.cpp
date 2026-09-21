@@ -1,13 +1,43 @@
 #include "DeviceController.h"
 #include "DeviceTrustService.h"
 
-
-void DeviceController::registerRoutes(ZeroTrustApp& app)
+void DeviceController::registerRoutes(
+    ZeroTrustApp& app,
+    AuthService& authService
+)
 {
     CROW_ROUTE(app, "/api/device/evaluate")
         .methods(crow::HTTPMethod::POST)
-    ([](const crow::request& req)
+    ([&authService](const crow::request& req)
     {
+        const std::string authHeader =
+            req.get_header_value("Authorization");
+
+        const std::string prefix = "Bearer ";
+
+        if (authHeader.rfind(prefix, 0) != 0)
+        {
+            return crow::response(
+                401,
+                R"({"error":"Missing bearer token"})"
+            );
+        }
+
+        const std::string token =
+            authHeader.substr(prefix.length());
+
+        std::string authenticatedUserId;
+
+        if (!authService.validateSession(
+                token,
+                authenticatedUserId))
+        {
+            return crow::response(
+                401,
+                R"({"error":"Invalid or expired session token"})"
+            );
+        }
+
         auto body = crow::json::load(req.body);
 
         if (!body)
@@ -45,10 +75,8 @@ void DeviceController::registerRoutes(ZeroTrustApp& app)
             service.isTrusted(score);
 
         crow::json::wvalue response;
-
         response["trustScore"] = score;
         response["trusted"] = trusted;
-
         response["decision"] =
             trusted ? "TRUSTED" : "UNTRUSTED";
 

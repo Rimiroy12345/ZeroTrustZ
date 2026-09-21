@@ -34,7 +34,7 @@ int main()
     HealthController::registerRoutes(app);
     AccessController::registerRoutes(app, authService);
     AuthController::registerRoutes(app, authService);
-    DeviceController::registerRoutes(app);
+    DeviceController::registerRoutes(app, authService);
     AuditController::registerRoutes(app, authService);
 
     const char* portEnv = std::getenv("PORT");

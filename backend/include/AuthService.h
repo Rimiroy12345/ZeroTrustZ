@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -14,6 +15,7 @@ class AuthService
 {
 private:
     std::unordered_map<std::string, Session> sessions;
+    std::mutex sessionsMutex;
 
 public:
     std::string createSession(const std::string& userId);

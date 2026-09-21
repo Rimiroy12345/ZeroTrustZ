@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import AccessRequestsPage from "./pages/AccessRequestsPage";
 import ModulePage from "./pages/ModulePage";
+import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
   return (
@@ -13,7 +14,8 @@ function App() {
 
       <Route path="/login" element={<LoginPage />} />
 
-      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
 
       <Route path="/access" element={<AccessRequestsPage />} />
 
@@ -583,6 +585,7 @@ function App() {
           />
         }
       />
+      </Route>
     </Routes>
   );
 }

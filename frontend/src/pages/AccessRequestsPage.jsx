@@ -29,6 +29,33 @@ const navItems = [
   { name: "Audit Logs", path: "/logs" },
 ];
 
+const roleProfiles = {
+  admin: {
+    label: "Admin",
+    assignedUserTrustScore: 90,
+    requiredUserTrustScore: 85,
+    requiredDeviceTrustScore: 85,
+  },
+  security: {
+    label: "Security",
+    assignedUserTrustScore: 85,
+    requiredUserTrustScore: 80,
+    requiredDeviceTrustScore: 75,
+  },
+  developer: {
+    label: "Developer",
+    assignedUserTrustScore: 75,
+    requiredUserTrustScore: 70,
+    requiredDeviceTrustScore: 65,
+  },
+  analyst: {
+    label: "Analyst",
+    assignedUserTrustScore: 65,
+    requiredUserTrustScore: 60,
+    requiredDeviceTrustScore: 60,
+  },
+};
+
 const initialRequests = [
   {
     id: "REQ-1042",
@@ -100,13 +127,14 @@ function AccessRequestsPage() {
   const [form, setForm] = useState({
     username: "admin@zerotrustz.dev",
     role: "admin",
-    userTrustScore: 85,
     resource: "cloud-dashboard",
     action: "read",
     ipAddress: "127.0.0.1",
     deviceId: "ZT-LAPTOP-042",
     deviceTrustScore: 90,
   });
+
+  const selectedRolePolicy = roleProfiles[form.role];
 
   const total = requests.length;
   const allowed = requests.filter((request) => request.decision === "Allow").length;
@@ -120,7 +148,7 @@ function AccessRequestsPage() {
     setForm((current) => ({
       ...current,
       [name]:
-        name === "userTrustScore" || name === "deviceTrustScore"
+        name === "deviceTrustScore"
           ? Number(value)
           : value,
     }));
@@ -171,7 +199,11 @@ function AccessRequestsPage() {
         resource: form.resource,
         device: form.deviceId,
         location: form.ipAddress,
-        risk: trustToRisk(form.userTrustScore, form.deviceTrustScore),
+        risk: trustToRisk(
+          data.policy?.assignedUserTrustScore ??
+            selectedRolePolicy.assignedUserTrustScore,
+          form.deviceTrustScore
+        ),
         decision: data.decision === "ALLOW" ? "Allow" : "Deny",
         reason: data.reason || "Zero Trust policy evaluation completed.",
         time: now.toLocaleTimeString([], {
@@ -292,15 +324,12 @@ function AccessRequestsPage() {
               </label>
 
               <label>
-                User trust
+                Assigned user trust
                 <input
-                  name="userTrustScore"
                   type="number"
-                  min="0"
-                  max="100"
-                  value={form.userTrustScore}
-                  onChange={updateField}
-                  required
+                  value={selectedRolePolicy.assignedUserTrustScore}
+                  readOnly
+                  aria-label="Assigned user trust score"
                 />
               </label>
 
@@ -525,8 +554,11 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>User trust threshold</span>
-                  <strong>60 / 100</strong>
+                  <span>{selectedRolePolicy.label} user trust</span>
+                  <strong>
+                    {selectedRolePolicy.assignedUserTrustScore} assigned ·{" "}
+                    {selectedRolePolicy.requiredUserTrustScore} required
+                  </strong>
                 </div>
               </div>
 
@@ -536,15 +568,17 @@ function AccessRequestsPage() {
                 </div>
 
                 <div>
-                  <span>Device trust threshold</span>
-                  <strong>60 / 100</strong>
+                  <span>{selectedRolePolicy.label} device threshold</span>
+                  <strong>
+                    {selectedRolePolicy.requiredDeviceTrustScore} / 100
+                  </strong>
                 </div>
               </div>
 
               <div className="engine-note">
                 <ShieldCheck size={16} />
-                Every submitted request is revalidated by the deployed backend.
-                A valid session alone never guarantees access.
+                The selected role is mapped to a polymorphic C++ policy class.
+                Trust requirements are enforced by the backend, not typed by the user.
               </div>
             </aside>
           </section>

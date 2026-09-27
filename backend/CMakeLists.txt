@@ -56,6 +56,8 @@ add_executable(
     src/User.cpp
     src/AccessRequest.cpp
     src/PolicyEngine.cpp
+    src/RolePolicy.cpp
+    src/RolePolicyFactory.cpp
     src/AuditLogger.cpp
     src/AuthService.cpp
     src/AuthController.cpp

@@ -53,7 +53,6 @@ void AccessController::registerRoutes(
 
         if (!body.has("username") ||
             !body.has("role") ||
-            !body.has("userTrustScore") ||
             !body.has("resource") ||
             !body.has("action") ||
             !body.has("ipAddress") ||
@@ -73,7 +72,6 @@ void AccessController::registerRoutes(
         );
 
         user.setAuthenticated(true);
-        user.setTrustScore(body["userTrustScore"].i());
 
         AccessRequest accessRequest(
             authenticatedUserId,
@@ -86,39 +84,43 @@ void AccessController::registerRoutes(
 
         PolicyEngine policyEngine;
 
-        std::string reason;
-
-        const bool allowed =
+        const PolicyEvaluation evaluation =
             policyEngine.evaluate(
                 user,
-                accessRequest,
-                reason
+                accessRequest
             );
 
         AuditLogger::logAccessDecision(
             user.getId(),
             accessRequest.getResource(),
             accessRequest.getAction(),
-            allowed,
-            reason
+            evaluation.allowed,
+            evaluation.reason
         );
 
         crow::json::wvalue response;
 
-        response["allowed"] = allowed;
+        response["allowed"] = evaluation.allowed;
         response["decision"] =
-            allowed ? "ALLOW" : "DENY";
-
-        response["reason"] = reason;
+            evaluation.allowed ? "ALLOW" : "DENY";
+        response["reason"] = evaluation.reason;
         response["userId"] = authenticatedUserId;
         response["resource"] =
             accessRequest.getResource();
-
         response["action"] =
             accessRequest.getAction();
 
+        response["policy"]["role"] =
+            evaluation.roleName;
+        response["policy"]["assignedUserTrustScore"] =
+            evaluation.assignedUserTrustScore;
+        response["policy"]["requiredUserTrustScore"] =
+            evaluation.requiredUserTrustScore;
+        response["policy"]["requiredDeviceTrustScore"] =
+            evaluation.requiredDeviceTrustScore;
+
         return crow::response(
-            allowed ? 200 : 403,
+            evaluation.allowed ? 200 : 403,
             response
         );
     });

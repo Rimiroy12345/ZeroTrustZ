@@ -1,50 +1,53 @@
 #include "PolicyEngine.h"
 
-PolicyEngine::PolicyEngine(
-    int minimumUserTrustScore,
-    int minimumDeviceTrustScore
-)
-    : minimumUserTrustScore(minimumUserTrustScore),
-      minimumDeviceTrustScore(minimumDeviceTrustScore)
-{
-}
+#include "RolePolicyFactory.h"
 
-bool PolicyEngine::evaluate(
-    const User& user,
-    const AccessRequest& request,
-    std::string& reason
+PolicyEvaluation PolicyEngine::evaluate(
+    User& user,
+    const AccessRequest& request
 ) const
 {
-    if (!user.isAuthenticated())
+    PolicyEvaluation result{
+        false,
+        "",
+        0,
+        0,
+        0,
+        ""
+    };
+
+    auto policy =
+        RolePolicyFactory::create(user.getRole());
+
+    if (!policy)
     {
-        reason = "Access denied: user is not authenticated.";
-        return false;
+        result.reason =
+            "Access denied: unsupported user role.";
+        return result;
     }
 
-    if (user.getId() != request.getUserId())
-    {
-        reason = "Access denied: user identity does not match request identity.";
-        return false;
-    }
+    user.setTrustScore(
+        policy->getAssignedUserTrustScore()
+    );
 
-    if (user.getTrustScore() < minimumUserTrustScore)
-    {
-        reason = "Access denied: user trust score is below the required threshold.";
-        return false;
-    }
+    result.assignedUserTrustScore =
+        policy->getAssignedUserTrustScore();
 
-    if (request.getDeviceTrustScore() < minimumDeviceTrustScore)
-    {
-        reason = "Access denied: device trust score is below the required threshold.";
-        return false;
-    }
+    result.requiredUserTrustScore =
+        policy->getMinimumUserTrustScore();
 
-    if (request.getResource().empty() || request.getAction().empty())
-    {
-        reason = "Access denied: invalid resource or action.";
-        return false;
-    }
+    result.requiredDeviceTrustScore =
+        policy->getMinimumDeviceTrustScore();
 
-    reason = "Access granted: Zero Trust policy checks passed.";
-    return true;
+    result.roleName =
+        policy->getRoleName();
+
+    result.allowed =
+        policy->evaluate(
+            user,
+            request,
+            result.reason
+        );
+
+    return result;
 }
